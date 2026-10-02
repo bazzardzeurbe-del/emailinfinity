@@ -31,8 +31,8 @@
   const WORKER_URL = "https://mail-code.bazzard-zeurbe.workers.dev";
   const DOMAINE = "mojang-login-live.com";
   // ========================
-  const TENTATIVES = 40, INTERVALLE = 3000; // 40 x 3s = 2 min
-  let run = 0;
+  const TENTATIVES = 60, INTERVALLE = 3000; // 60 x 3s = 3 min
+  let run = 0, ctrl = null;
   const $ = id => document.getElementById(id);
 
   function username() {
@@ -42,9 +42,13 @@
   }
 
   async function creer() {
-    const id = ++run;                       // annule l'attente précédente
+    const id = ++run;                       // invalide l'ancienne recherche
+    if (ctrl) ctrl.abort();                 // coupe la requête en cours
+    ctrl = new AbortController();
+    const signal = ctrl.signal;
     $("email").textContent = "";
     $("code").textContent = "";
+    $("status").textContent = "";
     const adresse = `${username()}@${DOMAINE}`;
     $("email").textContent = adresse;
     $("status").textContent = "⏳ En attente du code…";
@@ -53,7 +57,7 @@
       await new Promise(r => setTimeout(r, INTERVALLE));
       if (id !== run) return;
       try {
-        const r = await fetch(`${WORKER_URL}/?address=${encodeURIComponent(adresse)}`);
+        const r = await fetch(`${WORKER_URL}/?address=${encodeURIComponent(adresse)}`, { signal, cache: "no-store" });
         const d = await r.json();
         if (id !== run) return;
         if (d.code) {
@@ -78,4 +82,3 @@
 </script>
 </body>
 </html>
-
