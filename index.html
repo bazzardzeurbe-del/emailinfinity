@@ -1,1 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email temporaire</title>
+<style>
+  :root{--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#6e6e73;--accent:#5865f2}
+  @media(prefers-color-scheme:dark){:root{--bg:#111214;--card:#1c1d21;--text:#f2f2f3;--muted:#9a9aa2}}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:16px}
+  .card{background:var(--card);padding:28px;border-radius:16px;width:100%;max-width:440px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  h1{font-size:1.3rem;margin:0 0 20px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:12px 22px;font-size:1rem;cursor:pointer}
+  .email{margin-top:22px;font-family:monospace;font-size:1.05rem;word-break:break-all;cursor:pointer;min-height:1.4em}
+  .status{color:var(--muted);font-size:.9rem;margin-top:8px;min-height:1.2em}
+  .code{font-family:monospace;font-size:2.2rem;letter-spacing:.2em;font-weight:700;margin-top:14px;min-height:1.2em}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📧 Email temporaire</h1>
+  <button id="btn">Créer un email</button>
+  <div class="email" id="email" title="Cliquer pour copier"></div>
+  <div class="status" id="status"></div>
+  <div class="code" id="code"></div>
+</div>
+
+<script>
+  // ====== À MODIFIER ======
+  const WORKER_URL = "https://mail-code.bazzard-zeurbe.workers.dev";
+  const DOMAINE = "mojang-login-live.com";
+  // ========================
+  const TENTATIVES = 40, INTERVALLE = 3000; // 40 x 3s = 2 min
+  let run = 0;
+  const $ = id => document.getElementById(id);
+
+  function username() {
+    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const n = 8 + (crypto.getRandomValues(new Uint8Array(1))[0] % 5);
+    return Array.from(crypto.getRandomValues(new Uint8Array(n)), b => c[b % c.length]).join("");
+  }
+
+  async function creer() {
+    const id = ++run;                       // annule l'attente précédente
+    $("email").textContent = "";
+    $("code").textContent = "";
+    const adresse = `${username()}@${DOMAINE}`;
+    $("email").textContent = adresse;
+    $("status").textContent = "⏳ En attente du code…";
+
+    for (let i = 0; i < TENTATIVES; i++) {
+      await new Promise(r => setTimeout(r, INTERVALLE));
+      if (id !== run) return;
+      try {
+        const r = await fetch(`${WORKER_URL}/?address=${encodeURIComponent(adresse)}`);
+        const d = await r.json();
+        if (id !== run) return;
+        if (d.code) {
+          $("code").textContent = d.code;
+          $("status").textContent = "✅ Code reçu";
+          return;
+        }
+      } catch (e) { /* on réessaie */ }
+    }
+    if (id === run) $("status").textContent = "❌ Aucun code reçu à temps";
+  }
+
+  $("btn").addEventListener("click", creer);
+  $("email").addEventListener("click", () => {
+    const t = $("email").textContent;
+    if (t) navigator.clipboard.writeText(t).then(() => {
+      const s = $("status").textContent;
+      $("status").textContent = "📋 Copié !";
+      setTimeout(() => { if ($("status").textContent === "📋 Copié !") $("status").textContent = s; }, 1200);
+    });
+  });
+</script>
+</body>
+</html>
 
