@@ -36,7 +36,7 @@
   const $ = id => document.getElementById(id);
 
   function username() {
-    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     const n = 8 + (crypto.getRandomValues(new Uint8Array(1))[0] % 5);
     return Array.from(crypto.getRandomValues(new Uint8Array(n)), b => c[b % c.length]).join("");
   }
