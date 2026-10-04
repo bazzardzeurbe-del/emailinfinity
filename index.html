@@ -36,11 +36,30 @@
   const $ = id => document.getElementById(id);
 
   function username() {
-    const c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    const chars = letters + numbers;
+  
     const n = 8 + (crypto.getRandomValues(new Uint8Array(1))[0] % 5);
-    return Array.from(crypto.getRandomValues(new Uint8Array(n)), b => c[b % c.length]).join("");
+  
+    // Garantit au moins 1 majuscule et 1 chiffre
+    const username = [
+      letters[crypto.getRandomValues(new Uint8Array(1))[0] % letters.length],
+      numbers[crypto.getRandomValues(new Uint8Array(1))[0] % numbers.length],
+      ...Array.from(
+        crypto.getRandomValues(new Uint8Array(n - 2)),
+        b => chars[b % chars.length]
+      )
+    ];
+  
+    // Mélange sécurisé
+    for (let i = username.length - 1; i > 0; i--) {
+      const j = crypto.getRandomValues(new Uint8Array(1))[0] % (i + 1);
+      [username[i], username[j]] = [username[j], username[i]];
+    }
+  
+    return username.join("");
   }
-
   async function creer() {
     const id = ++run;                       // invalide l'ancienne recherche
     if (ctrl) ctrl.abort();                 // coupe la requête en cours
